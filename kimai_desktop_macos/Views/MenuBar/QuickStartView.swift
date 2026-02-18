@@ -53,7 +53,7 @@ struct QuickStartView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.green)
-                .glassEffect(.regular.interactive(), in: .capsule)
+                .interactiveGlassEffect()
                 .disabled(selectedProject == nil || selectedActivity == nil || appState.isLoading)
             }
         }

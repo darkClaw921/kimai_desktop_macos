@@ -48,7 +48,7 @@ struct ActiveTimerView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
-                .glassEffect(.regular.interactive(), in: .capsule)
+                .interactiveGlassEffect()
             }
         }
     }

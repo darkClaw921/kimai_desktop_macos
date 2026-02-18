@@ -8,13 +8,29 @@ struct MenuBarPopover: View {
             if !appState.isConfigured {
                 notConfiguredView
             } else {
-                GlassEffectContainer {
+                #if compiler(>=6.2)
+                if #available(macOS 26.0, *) {
+                    GlassEffectContainer {
+                        if let activeTimesheet = appState.activeTimesheet {
+                            ActiveTimerView(timesheet: activeTimesheet)
+                        } else {
+                            QuickStartView()
+                        }
+                    }
+                } else {
                     if let activeTimesheet = appState.activeTimesheet {
                         ActiveTimerView(timesheet: activeTimesheet)
                     } else {
                         QuickStartView()
                     }
                 }
+                #else
+                if let activeTimesheet = appState.activeTimesheet {
+                    ActiveTimerView(timesheet: activeTimesheet)
+                } else {
+                    QuickStartView()
+                }
+                #endif
 
                 RecentTimesheetsView()
             }
