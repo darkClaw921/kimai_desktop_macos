@@ -92,6 +92,10 @@ WidgetKit Extension  ←→    KeychainService (Security framework)
 | Timer | DispatchSourceTimer | MainActor-compatible, 1s interval |
 | Main window | NavigationSplitView | Glass sidebar, 3-column layout |
 
+### Scripts — `scripts/`
+
+- [`build_dmg.sh`](scripts/build_dmg.sh) — Bash скрипт автоматической сборки проекта в DMG. Архивирует через xcodebuild, извлекает .app, создаёт DMG с symlink на /Applications. Выходной файл: `build/Kimai_Desktop_v{version}_{build}.dmg`.
+
 ## Kimai API Endpoints Used
 
 - `GET /api/users/me` — Test connection
