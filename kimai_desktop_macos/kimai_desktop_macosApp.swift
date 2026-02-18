@@ -34,10 +34,18 @@ struct kimai_desktop_macosApp: App {
                 .symbolEffect(.pulse, isActive: appState.isTracking)
 
             if appState.isTracking {
-                Text(appState.timerService.formattedElapsed)
+                Text(menuBarTimerText)
                     .font(.system(.caption, design: .monospaced))
                     .monospacedDigit()
             }
         }
+    }
+
+    private var menuBarTimerText: String {
+        let time = appState.timerService.formattedElapsed
+        if let earnings = appState.formattedEarnings {
+            return "\(time) · \(earnings)"
+        }
+        return time
     }
 }

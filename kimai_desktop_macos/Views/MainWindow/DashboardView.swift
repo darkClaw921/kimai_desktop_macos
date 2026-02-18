@@ -59,6 +59,13 @@ struct DashboardView: View {
                                 font: .system(.title, design: .monospaced)
                             )
 
+                            if let earnings = appState.formattedEarnings {
+                                Text(earnings)
+                                    .font(.system(.title3, design: .monospaced))
+                                    .monospacedDigit()
+                                    .foregroundStyle(.secondary)
+                            }
+
                             Button {
                                 Task { await appState.stopTimer() }
                             } label: {

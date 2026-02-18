@@ -22,6 +22,10 @@ final class AppState {
     var currentHistoryPage = 1
     var hasMoreHistory = true
 
+    // Hourly rate for active project
+    var activeHourlyRate: Double = 0
+    private var cachedRateProjectId: Int?
+
     // UI state
     var isLoading = false
     var selectedProject: KimaiProject?
@@ -32,6 +36,31 @@ final class AppState {
 
     var isTracking: Bool {
         activeTimesheet != nil
+    }
+
+    /// Current earnings for the active timer based on hourly rate
+    var currentEarnings: Double? {
+        guard activeTimesheet != nil, activeHourlyRate > 0 else { return nil }
+        return activeHourlyRate * (timerService.elapsed / 3600.0)
+    }
+
+    private static let earningsFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.minimumFractionDigits = 2
+        f.maximumFractionDigits = 2
+        f.groupingSeparator = " "
+        f.groupingSize = 3
+        f.usesGroupingSeparator = true
+        return f
+    }()
+
+    /// Formatted current earnings string (e.g. "1 234.50 ₽")
+    var formattedEarnings: String? {
+        guard let earnings = currentEarnings else { return nil }
+        let suffix = UserDefaults.standard.string(forKey: "currencySuffix") ?? Constants.Defaults.currencySuffix
+        let number = Self.earningsFormatter.string(from: NSNumber(value: earnings)) ?? String(format: "%.2f", earnings)
+        return "\(number) \(suffix)"
     }
 
     var isConfigured: Bool {
@@ -73,8 +102,14 @@ final class AppState {
 
             if let activeTimesheet, let beginDate = activeTimesheet.beginDate {
                 timerService.start(from: beginDate)
+                // Load hourly rate for the active project (cached per projectId)
+                if cachedRateProjectId != activeTimesheet.projectId {
+                    await loadProjectRate(projectId: activeTimesheet.projectId)
+                }
             } else {
                 timerService.stop()
+                activeHourlyRate = 0
+                cachedRateProjectId = nil
             }
 
             isConnected = true
@@ -113,6 +148,37 @@ final class AppState {
     private func loadProjectsAndActivities() async throws {
         projects = try await apiClient.fetchProjects()
         allActivities = try await apiClient.fetchActivities()
+    }
+
+    private func loadProjectRate(projectId: Int) async {
+        // Calculate hourly rate from completed timesheets of the same project
+        // hourlyRate = rate / (duration / 3600)
+        let allAvailable = recentTimesheets + allTimesheets
+        let reference = allAvailable.first { (ts: KimaiTimesheet) -> Bool in
+            guard ts.projectId == projectId, !ts.isActive else { return false }
+            guard let r = ts.rate, r > 0 else { return false }
+            guard let d = ts.duration, d > 0 else { return false }
+            return true
+        }
+        if let ref = reference, let refRate = ref.rate, let refDuration = ref.duration {
+            activeHourlyRate = refRate / (Double(refDuration) / 3600.0)
+            cachedRateProjectId = projectId
+            print("[DEBUG] Calculated hourlyRate=\(activeHourlyRate) from timesheet \(ref.id) (rate=\(refRate), duration=\(refDuration))")
+            return
+        }
+
+        // Fallback: try fetching from project rates API
+        do {
+            let rates = try await apiClient.fetchProjectRates(projectId: projectId)
+            let hourlyRates = rates.filter { !$0.isFixed }
+            let rate = hourlyRates.first { $0.user != nil } ?? hourlyRates.first
+            activeHourlyRate = rate?.rate ?? 0
+            cachedRateProjectId = projectId
+        } catch {
+            print("[DEBUG] loadProjectRate API fallback error: \(error)")
+            activeHourlyRate = 0
+            cachedRateProjectId = nil
+        }
     }
 
     // MARK: - Name Resolution

@@ -9,5 +9,6 @@ nonisolated enum Constants {
         static let refreshInterval: TimeInterval = 30
         static let recentTimesheetsCount = 5
         static let historyPageSize = 50
+        static let currencySuffix = "₽"
     }
 }

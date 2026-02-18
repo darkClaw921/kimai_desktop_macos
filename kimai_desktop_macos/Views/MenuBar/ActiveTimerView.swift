@@ -25,20 +25,30 @@ struct ActiveTimerView: View {
                 }
 
                 HStack {
-                    ElapsedTimeText(timerService: appState.timerService)
+                    ElapsedTimeText(
+                        timerService: appState.timerService,
+                        font: .system(.title, design: .monospaced)
+                    )
 
-                    Spacer()
-
-                    Button {
-                        Task { await appState.stopTimer() }
-                    } label: {
-                        Label("Стоп", systemImage: "stop.fill")
-                            .font(.body.weight(.medium))
+                    if let earnings = appState.formattedEarnings {
+                        Spacer()
+                        Text(earnings)
+                            .font(.system(.title2, design: .monospaced))
+                            .monospacedDigit()
+                            .foregroundStyle(.green)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.red)
-                    .glassEffect(.regular.interactive(), in: .capsule)
                 }
+
+                Button {
+                    Task { await appState.stopTimer() }
+                } label: {
+                    Label("Стоп", systemImage: "stop.fill")
+                        .font(.body.weight(.medium))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .glassEffect(.regular.interactive(), in: .capsule)
             }
         }
     }

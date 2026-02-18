@@ -55,6 +55,17 @@ struct TimesheetHistoryView: View {
                     }
                     .width(min: 60, ideal: 80)
 
+                    TableColumn("Стоимость") { timesheet in
+                        if let rate = timesheet.rate, rate > 0 {
+                            Text(String(format: "%.2f", rate))
+                                .font(.system(.body, design: .monospaced))
+                        } else {
+                            Text("—")
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .width(min: 60, ideal: 80)
+
                     TableColumn("") { timesheet in
                         if !timesheet.isActive {
                             Button {

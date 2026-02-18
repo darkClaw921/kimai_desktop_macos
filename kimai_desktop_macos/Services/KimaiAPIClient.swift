@@ -204,4 +204,12 @@ actor KimaiAPIClient {
     func restartTimesheet(id: Int) async throws -> KimaiTimesheet {
         try await request(method: "PATCH", path: "/api/timesheets/\(id)/restart")
     }
+
+    func fetchProjectRates(projectId: Int) async throws -> [KimaiRate] {
+        try await request(path: "/api/projects/\(projectId)/rates")
+    }
+
+    func fetchActivityRates(activityId: Int) async throws -> [KimaiRate] {
+        try await request(path: "/api/activities/\(activityId)/rates")
+    }
 }

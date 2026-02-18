@@ -11,11 +11,12 @@ nonisolated struct KimaiTimesheet: Codable, Identifiable, Sendable {
     let activityName: String?
     let description: String?
     let tags: [String]?
+    let rate: Double?
 
     // MARK: - Custom Codable (project/activity can be Int or Object)
 
     enum CodingKeys: String, CodingKey {
-        case id, begin, end, duration, project, activity, description, tags
+        case id, begin, end, duration, project, activity, description, tags, rate
     }
 
     private struct ProjectRef: Decodable {
@@ -36,6 +37,7 @@ nonisolated struct KimaiTimesheet: Codable, Identifiable, Sendable {
         duration = try container.decodeIfPresent(Int.self, forKey: .duration)
         description = try container.decodeIfPresent(String.self, forKey: .description)
         tags = try container.decodeIfPresent([String].self, forKey: .tags)
+        rate = try container.decodeIfPresent(Double.self, forKey: .rate)
 
         // Project: Int or Object
         if let obj = try? container.decode(ProjectRef.self, forKey: .project) {
@@ -66,6 +68,7 @@ nonisolated struct KimaiTimesheet: Codable, Identifiable, Sendable {
         try container.encode(activityId, forKey: .activity)
         try container.encodeIfPresent(description, forKey: .description)
         try container.encodeIfPresent(tags, forKey: .tags)
+        try container.encodeIfPresent(rate, forKey: .rate)
     }
 
     // MARK: - Computed
