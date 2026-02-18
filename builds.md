@@ -36,3 +36,5 @@ DMG появится в `build/Kimai_Desktop_v{version}_{build}.dmg`
      -ov -format UDZO \
      KimaiDesktop.dmg
    ```
+ Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project                         
+      /Users/igorgerasimov/claudeWorks…) 

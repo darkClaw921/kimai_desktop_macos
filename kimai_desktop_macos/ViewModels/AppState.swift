@@ -1,6 +1,5 @@
 import Foundation
 import Observation
-import WidgetKit
 
 @Observable
 final class AppState {
@@ -74,10 +73,8 @@ final class AppState {
 
             if let activeTimesheet, let beginDate = activeTimesheet.beginDate {
                 timerService.start(from: beginDate)
-                syncWidgetState(tracking: true, timesheet: activeTimesheet)
             } else {
                 timerService.stop()
-                syncWidgetState(tracking: false, timesheet: nil)
             }
 
             isConnected = true
@@ -170,8 +167,6 @@ final class AppState {
             if let beginDate = timesheet.beginDate {
                 timerService.start(from: beginDate)
             }
-            syncWidgetState(tracking: true, timesheet: timesheet)
-            WidgetCenter.shared.reloadAllTimelines()
             await refresh()
         } catch {
             connectionError = error.localizedDescription
@@ -187,8 +182,6 @@ final class AppState {
             _ = try await apiClient.stopTimesheet(id: activeTimesheet.id)
             self.activeTimesheet = nil
             timerService.stop()
-            syncWidgetState(tracking: false, timesheet: nil)
-            WidgetCenter.shared.reloadAllTimelines()
             await refresh()
         } catch {
             connectionError = error.localizedDescription
@@ -205,8 +198,6 @@ final class AppState {
             if let beginDate = restarted.beginDate {
                 timerService.start(from: beginDate)
             }
-            syncWidgetState(tracking: true, timesheet: restarted)
-            WidgetCenter.shared.reloadAllTimelines()
             await refresh()
         } catch {
             connectionError = error.localizedDescription
@@ -215,20 +206,5 @@ final class AppState {
 
     func testConnection() async throws -> Bool {
         try await apiClient.testConnection()
-    }
-
-    // MARK: - Widget Sync
-
-    private func syncWidgetState(tracking: Bool, timesheet: KimaiTimesheet?) {
-        if tracking, let timesheet {
-            SharedDefaults.updateTrackingState(
-                isTracking: true,
-                projectName: resolvedProjectName(for: timesheet),
-                activityName: resolvedActivityName(for: timesheet),
-                startDate: timesheet.beginDate
-            )
-        } else {
-            SharedDefaults.clearTracking()
-        }
     }
 }

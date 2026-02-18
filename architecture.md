@@ -2,7 +2,7 @@
 
 ## Overview
 
-macOS application for time tracking via Kimai API. Two interfaces: menu bar popover (quick access) and main window (history/stats). Desktop widget shows tracking state. Built with SwiftUI, Liquid Glass (macOS 26 Tahoe), MVVM + @Observable.
+macOS application for time tracking via Kimai API. Two interfaces: menu bar popover (quick access) and main window (history/stats). Built with SwiftUI, Liquid Glass (macOS 26 Tahoe), MVVM + @Observable.
 
 ## Architecture Diagram
 
@@ -11,9 +11,7 @@ MenuBarExtra (.window)  ←→  AppState (@Observable)  ←→  KimaiAPIClient (
      │                           │                            │
 WindowGroup (main)          TimerService              URLSession → Kimai REST API
      │                           │
-Settings scene              SharedDefaults (App Groups)
-                                 │
-WidgetKit Extension  ←→    KeychainService (Security framework)
+Settings scene              KeychainService (Security framework)
 ```
 
 ## Project Structure
@@ -32,11 +30,10 @@ WidgetKit Extension  ←→    KeychainService (Security framework)
 #### Services/
 - [`KimaiAPIClient.swift`](kimai_desktop_macos/Services/KimaiAPIClient.swift) — Actor, async/await URLSession. Generic `request<T: Decodable & Sendable>()` method. Эндпоинты: testConnection, fetchProjects, fetchActivities, fetchActiveTimesheets, fetchRecentTimesheets, fetchTimesheets (paginated), startTimesheet, stopTimesheet, restartTimesheet. Auth через Bearer token.
 - [`KeychainService.swift`](kimai_desktop_macos/Services/KeychainService.swift) — nonisolated enum, обёртка Security framework. CRUD для Keychain: save/load/delete. Convenience properties: `apiToken`, `baseURL`.
-- [`SharedDefaults.swift`](kimai_desktop_macos/Services/SharedDefaults.swift) — App Groups UserDefaults обёртка для синхронизации состояния трекинга с виджетом. Properties: isTracking, currentProjectName, currentActivityName, trackingStartDate, lastSyncDate.
 - [`TimerService.swift`](kimai_desktop_macos/Services/TimerService.swift) — @Observable класс, DispatchSourceTimer каждую секунду. Отслеживает `elapsed` time от `startDate`. `formattedElapsed` для отображения.
 
 #### ViewModels/
-- [`AppState.swift`](kimai_desktop_macos/ViewModels/AppState.swift) — Корневой @Observable. Содержит `KimaiAPIClient`, `TimerService`. Управляет: подключением, активным таймером, recent/all timesheets, проектами/активностями. Polling с интервалом. Widget sync через `SharedDefaults` + `WidgetCenter.shared.reloadAllTimelines()`.
+- [`AppState.swift`](kimai_desktop_macos/ViewModels/AppState.swift) — Корневой @Observable. Содержит `KimaiAPIClient`, `TimerService`. Управляет: подключением, активным таймером, recent/all timesheets, проектами/активностями. Polling с интервалом.
 - [`TimesheetViewModel.swift`](kimai_desktop_macos/ViewModels/TimesheetViewModel.swift) — Фильтрация таймшитов: по проекту, дате, поиску. Helpers: todayTimesheets, weekTimesheets, totalDuration.
 - [`ProjectsViewModel.swift`](kimai_desktop_macos/ViewModels/ProjectsViewModel.swift) — Фильтрация проектов по поиску. Helpers: projectTimesheets, projectTotalDuration.
 
@@ -66,17 +63,8 @@ WidgetKit Extension  ←→    KeychainService (Security framework)
 - [`StatusIndicator.swift`](kimai_desktop_macos/Views/Components/StatusIndicator.swift) — Enum Status (online/offline/tracking) с цветным кружком и label.
 
 #### Utilities/
-- [`Constants.swift`](kimai_desktop_macos/Utilities/Constants.swift) — nonisolated enum. App Group ID, Keychain keys, default values (refresh interval, page sizes), SharedDefaults keys.
+- [`Constants.swift`](kimai_desktop_macos/Utilities/Constants.swift) — nonisolated enum. Keychain keys, default values (refresh interval, page sizes).
 - [`DateFormatting.swift`](kimai_desktop_macos/Utilities/DateFormatting.swift) — nonisolated enum. RFC 3339 парсинг/форматирование, elapsed time (hh:mm:ss), duration (Xh Ym), short date, time only.
-
-### Widget Extension — `kimai_desktop_macos_wiget/`
-
-- [`kimai_desktop_macos_wigetBundle.swift`](kimai_desktop_macos_wiget/kimai_desktop_macos_wigetBundle.swift) — @main WidgetBundle: KimaiTrackingWidget + ControlWidget.
-- [`kimai_desktop_macos_wiget.swift`](kimai_desktop_macos_wiget/kimai_desktop_macos_wiget.swift) — StaticConfiguration widget. `KimaiTimelineProvider` читает App Groups UserDefaults. `KimaiWidgetEntry` с tracking state. Поддержка `.systemSmall` и `.systemMedium`.
-- [`kimai_desktop_macos_wigetControl.swift`](kimai_desktop_macos_wiget/kimai_desktop_macos_wigetControl.swift) — ControlWidget показывающий статус трекинга. TimerConfiguration intent, StartTimerIntent.
-- [`AppIntent.swift`](kimai_desktop_macos_wiget/AppIntent.swift) — ConfigurationAppIntent для widget.
-- [`WidgetViews/SmallWidgetView.swift`](kimai_desktop_macos_wiget/WidgetViews/SmallWidgetView.swift) — Small widget: иконка + проект + timer (style: .timer).
-- [`WidgetViews/MediumWidgetView.swift`](kimai_desktop_macos_wiget/WidgetViews/MediumWidgetView.swift) — Medium widget: иконка + проект + активность + elapsed + детали.
 
 ## Key Technical Decisions
 
@@ -86,7 +74,6 @@ WidgetKit Extension  ←→    KeychainService (Security framework)
 | State | @Observable + @Environment | Native Swift Observation, macOS 26 |
 | Networking | URLSession actor | Async/await, thread-safe, zero deps |
 | Token storage | Keychain Services | Secure, system-level |
-| Widget data | App Groups UserDefaults | Standard Apple pattern |
 | Liquid Glass | Controls/navigation only | Apple design guidelines |
 | Concurrency | Swift 6, MainActor default | Models marked `nonisolated` for cross-actor use |
 | Timer | DispatchSourceTimer | MainActor-compatible, 1s interval |
