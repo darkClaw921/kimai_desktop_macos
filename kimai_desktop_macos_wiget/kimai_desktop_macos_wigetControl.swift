@@ -1,10 +1,3 @@
-//
-//  kimai_desktop_macos_wigetControl.swift
-//  kimai_desktop_macos_wiget
-//
-//  Created by Игорь Герасимов on 18.02.2026.
-//
-
 import AppIntents
 import SwiftUI
 import WidgetKit
@@ -18,15 +11,15 @@ struct kimai_desktop_macos_wigetControl: ControlWidget {
             provider: Provider()
         ) { value in
             ControlWidgetToggle(
-                "Start Timer",
+                "Таймер",
                 isOn: value.isRunning,
                 action: StartTimerIntent(value.name)
             ) { isRunning in
-                Label(isRunning ? "On" : "Off", systemImage: "timer")
+                Label(isRunning ? "Отслеживание" : "Неактивен", systemImage: isRunning ? "clock.badge.checkmark" : "clock")
             }
         }
-        .displayName("Timer")
-        .description("A an example control that runs a timer.")
+        .displayName("Таймер Kimai")
+        .description("Показывает текущий статус Kimai.")
     }
 }
 
@@ -38,30 +31,32 @@ extension kimai_desktop_macos_wigetControl {
 
     struct Provider: AppIntentControlValueProvider {
         func previewValue(configuration: TimerConfiguration) -> Value {
-            kimai_desktop_macos_wigetControl.Value(isRunning: false, name: configuration.timerName)
+            Value(isRunning: false, name: "Kimai")
         }
 
         func currentValue(configuration: TimerConfiguration) async throws -> Value {
-            let isRunning = true // Check if the timer is running
-            return kimai_desktop_macos_wigetControl.Value(isRunning: isRunning, name: configuration.timerName)
+            let defaults = UserDefaults(suiteName: "group.alteran.industries.kimai-desktop-macos")
+            let isRunning = defaults?.bool(forKey: "isTracking") ?? false
+            let name = defaults?.string(forKey: "currentProjectName") ?? "Kimai"
+            return Value(isRunning: isRunning, name: name)
         }
     }
 }
 
 struct TimerConfiguration: ControlConfigurationIntent {
-    static let title: LocalizedStringResource = "Timer Name Configuration"
+    static let title: LocalizedStringResource = "Настройка таймера Kimai"
 
-    @Parameter(title: "Timer Name", default: "Timer")
+    @Parameter(title: "Имя таймера", default: "Kimai")
     var timerName: String
 }
 
 struct StartTimerIntent: SetValueIntent {
-    static let title: LocalizedStringResource = "Start a timer"
+    static let title: LocalizedStringResource = "Переключить таймер Kimai"
 
-    @Parameter(title: "Timer Name")
+    @Parameter(title: "Имя таймера")
     var name: String
 
-    @Parameter(title: "Timer is running")
+    @Parameter(title: "Таймер запущен")
     var value: Bool
 
     init() {}
@@ -71,7 +66,6 @@ struct StartTimerIntent: SetValueIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        // Start the timer…
         return .result()
     }
 }

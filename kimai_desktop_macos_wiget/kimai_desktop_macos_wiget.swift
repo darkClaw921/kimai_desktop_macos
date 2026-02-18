@@ -1,67 +1,114 @@
-//
-//  kimai_desktop_macos_wiget.swift
-//  kimai_desktop_macos_wiget
-//
-//  Created by Игорь Герасимов on 18.02.2026.
-//
-
 import WidgetKit
 import SwiftUI
 
-struct Provider: AppIntentTimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent())
+// MARK: - Shared Constants (duplicated for widget target)
+
+private enum WidgetConstants {
+    static let appGroupID = "group.alteran.industries.kimai-desktop-macos"
+
+    enum Keys {
+        static let isTracking = "isTracking"
+        static let currentProjectName = "currentProjectName"
+        static let currentActivityName = "currentActivityName"
+        static let trackingStartDate = "trackingStartDate"
+        static let lastSyncDate = "lastSyncDate"
     }
-
-    func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: configuration)
-    }
-    
-    func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
-        var entries: [SimpleEntry] = []
-
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
-        let currentDate = Date()
-        for hourOffset in 0 ..< 5 {
-            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, configuration: configuration)
-            entries.append(entry)
-        }
-
-        return Timeline(entries: entries, policy: .atEnd)
-    }
-
-//    func relevances() async -> WidgetRelevances<ConfigurationAppIntent> {
-//        // Generate a list containing the contexts this widget is relevant in.
-//    }
 }
 
-struct SimpleEntry: TimelineEntry {
+// MARK: - Widget Entry
+
+struct KimaiWidgetEntry: TimelineEntry {
     let date: Date
-    let configuration: ConfigurationAppIntent
-}
+    let isTracking: Bool
+    let projectName: String?
+    let activityName: String?
+    let trackingStartDate: Date?
 
-struct kimai_desktop_macos_wigetEntryView : View {
-    var entry: Provider.Entry
+    static var placeholder: KimaiWidgetEntry {
+        KimaiWidgetEntry(
+            date: .now,
+            isTracking: true,
+            projectName: "Мой проект",
+            activityName: "Разработка",
+            trackingStartDate: Date.now.addingTimeInterval(-3600)
+        )
+    }
 
-    var body: some View {
-        VStack {
-            Text("Time:")
-            Text(entry.date, style: .time)
-
-            Text("Favorite Emoji:")
-            Text(entry.configuration.favoriteEmoji)
-        }
+    static var empty: KimaiWidgetEntry {
+        KimaiWidgetEntry(
+            date: .now,
+            isTracking: false,
+            projectName: nil,
+            activityName: nil,
+            trackingStartDate: nil
+        )
     }
 }
 
-struct kimai_desktop_macos_wiget: Widget {
-    let kind: String = "kimai_desktop_macos_wiget"
+// MARK: - Timeline Provider
+
+struct KimaiTimelineProvider: TimelineProvider {
+    func placeholder(in context: Context) -> KimaiWidgetEntry {
+        .placeholder
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (KimaiWidgetEntry) -> Void) {
+        completion(readCurrentState())
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<KimaiWidgetEntry>) -> Void) {
+        let entry = readCurrentState()
+        // Refresh every 5 minutes or when app signals
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 5, to: entry.date)!
+        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
+        completion(timeline)
+    }
+
+    private func readCurrentState() -> KimaiWidgetEntry {
+        guard let defaults = UserDefaults(suiteName: WidgetConstants.appGroupID) else {
+            return .empty
+        }
+
+        return KimaiWidgetEntry(
+            date: .now,
+            isTracking: defaults.bool(forKey: WidgetConstants.Keys.isTracking),
+            projectName: defaults.string(forKey: WidgetConstants.Keys.currentProjectName),
+            activityName: defaults.string(forKey: WidgetConstants.Keys.currentActivityName),
+            trackingStartDate: defaults.object(forKey: WidgetConstants.Keys.trackingStartDate) as? Date
+        )
+    }
+}
+
+// MARK: - Widget Definition
+
+struct KimaiTrackingWidget: Widget {
+    let kind = "KimaiTrackingWidget"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
-            kimai_desktop_macos_wigetEntryView(entry: entry)
+        StaticConfiguration(kind: kind, provider: KimaiTimelineProvider()) { entry in
+            KimaiWidgetEntryView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
+        }
+        .configurationDisplayName("Kimai Трекер")
+        .description("Показывает текущий статус отслеживания времени.")
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+// MARK: - Entry View Router
+
+struct KimaiWidgetEntryView: View {
+    @Environment(\.widgetFamily) var family
+    let entry: KimaiWidgetEntry
+
+    var body: some View {
+        switch family {
+        case .systemSmall:
+            SmallWidgetView(entry: entry)
+        case .systemMedium:
+            MediumWidgetView(entry: entry)
+        default:
+            SmallWidgetView(entry: entry)
         }
     }
 }
