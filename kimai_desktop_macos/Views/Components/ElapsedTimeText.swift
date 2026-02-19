@@ -7,7 +7,7 @@ struct ElapsedTimeText: View {
     var body: some View {
         Text(timerService.formattedElapsed)
             .font(font)
+            .monospacedDigit()
             .contentTransition(.numericText())
-            .animation(.linear(duration: 0.3), value: timerService.elapsed)
     }
 }

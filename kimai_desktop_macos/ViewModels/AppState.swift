@@ -33,6 +33,7 @@ final class AppState {
 
     // Polling
     private var pollTimer: Timer?
+    private var isRefreshing = false
 
     var isTracking: Bool {
         activeTimesheet != nil
@@ -70,7 +71,9 @@ final class AppState {
     // MARK: - Initialization
 
     func startPolling(interval: TimeInterval = Constants.Defaults.refreshInterval) {
-        stopPolling()
+        // Don't restart polling if already active with the same interval
+        if pollTimer != nil { return }
+
         Task { await refresh() }
         pollTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -87,7 +90,9 @@ final class AppState {
     // MARK: - Data Loading
 
     func refresh() async {
-        guard isConfigured else { return }
+        guard isConfigured, !isRefreshing else { return }
+        isRefreshing = true
+        defer { isRefreshing = false }
 
         do {
             if projects.isEmpty {

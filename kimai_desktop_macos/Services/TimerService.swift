@@ -13,6 +13,13 @@ final class TimerService {
     }
 
     func start(from date: Date = .now) {
+        // Don't restart if already running from the same date (avoids creating
+        // a new DispatchSourceTimer on every polling cycle)
+        if isRunning, let existingStart = startDate,
+           abs(existingStart.timeIntervalSince(date)) < 1.0 {
+            return
+        }
+
         stop()
         startDate = date
         isRunning = true
