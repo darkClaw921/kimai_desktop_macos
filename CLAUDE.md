@@ -54,3 +54,7 @@ bd ready	List tasks with no open blockers.
 bd create "Title" -p 0	Create a P0 task.
 bd dep add <child> <parent> Link tasks (blocks, related, parent-child).
 bd show <id> View task details and audit trail.
+
+# пример команды для xcodebuild
+Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project                         
+      /Users/igorgerasimov/claudeWorks…) 

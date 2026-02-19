@@ -7,6 +7,17 @@ struct QuickStartView: View {
     @State private var selectedActivity: KimaiActivity?
     @State private var description: String = ""
 
+    /// Projects grouped by customer, sorted newest first (by customer ID desc, projects by ID desc)
+    private var groupedProjects: [(customerName: String, customerId: Int, projects: [KimaiProject])] {
+        let grouped = Dictionary(grouping: appState.projects) { $0.customer }
+        return grouped.map { customerId, projects in
+            let customerName = projects.first?.customerName ?? "Без клиента"
+            let sortedProjects = projects.sorted { $0.id > $1.id }
+            return (customerName: customerName, customerId: customerId, projects: sortedProjects)
+        }
+        .sorted { $0.customerId > $1.customerId }
+    }
+
     var body: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 10) {
@@ -15,8 +26,12 @@ struct QuickStartView: View {
 
                 Picker("Проект", selection: $selectedProject) {
                     Text("Выберите проект...").tag(nil as KimaiProject?)
-                    ForEach(appState.projects) { project in
-                        Text(project.displayName).tag(project as KimaiProject?)
+                    ForEach(groupedProjects, id: \.customerId) { group in
+                        Section(group.customerName) {
+                            ForEach(group.projects) { project in
+                                Text(project.name).tag(project as KimaiProject?)
+                            }
+                        }
                     }
                 }
                 .onChange(of: selectedProject) { _, newValue in

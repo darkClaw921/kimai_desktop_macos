@@ -151,7 +151,7 @@ final class AppState {
     }
 
     private func loadProjectRate(projectId: Int) async {
-        // Calculate hourly rate from completed timesheets of the same project
+        // 1. Try local cache of completed timesheets
         // hourlyRate = rate / (duration / 3600)
         let allAvailable = recentTimesheets + allTimesheets
         let reference = allAvailable.first { (ts: KimaiTimesheet) -> Bool in
@@ -163,22 +163,59 @@ final class AppState {
         if let ref = reference, let refRate = ref.rate, let refDuration = ref.duration {
             activeHourlyRate = refRate / (Double(refDuration) / 3600.0)
             cachedRateProjectId = projectId
-            print("[DEBUG] Calculated hourlyRate=\(activeHourlyRate) from timesheet \(ref.id) (rate=\(refRate), duration=\(refDuration))")
             return
         }
 
-        // Fallback: try fetching from project rates API
+        // 2. Fetch a completed timesheet for this project from API
+        do {
+            let projectTimesheets = try await apiClient.fetchTimesheets(page: 1, size: 5, projectId: projectId)
+            let apiRef = projectTimesheets.first { (ts: KimaiTimesheet) -> Bool in
+                guard !ts.isActive else { return false }
+                guard let r = ts.rate, r > 0 else { return false }
+                guard let d = ts.duration, d > 0 else { return false }
+                return true
+            }
+            if let ref = apiRef, let refRate = ref.rate, let refDuration = ref.duration {
+                activeHourlyRate = refRate / (Double(refDuration) / 3600.0)
+                cachedRateProjectId = projectId
+                return
+            }
+        } catch {
+            print("[DEBUG] loadProjectRate fetch timesheets error: \(error)")
+        }
+
+        // 3. Try project rates API
         do {
             let rates = try await apiClient.fetchProjectRates(projectId: projectId)
             let hourlyRates = rates.filter { !$0.isFixed }
             let rate = hourlyRates.first { $0.user != nil } ?? hourlyRates.first
-            activeHourlyRate = rate?.rate ?? 0
-            cachedRateProjectId = projectId
+            if let rateValue = rate?.rate, rateValue > 0 {
+                activeHourlyRate = rateValue
+                cachedRateProjectId = projectId
+                return
+            }
         } catch {
-            print("[DEBUG] loadProjectRate API fallback error: \(error)")
-            activeHourlyRate = 0
-            cachedRateProjectId = nil
+            print("[DEBUG] loadProjectRate project rates error: \(error)")
         }
+
+        // 4. Try activity rates API
+        if let activeTimesheet {
+            do {
+                let rates = try await apiClient.fetchActivityRates(activityId: activeTimesheet.activityId)
+                let hourlyRates = rates.filter { !$0.isFixed }
+                let rate = hourlyRates.first { $0.user != nil } ?? hourlyRates.first
+                if let rateValue = rate?.rate, rateValue > 0 {
+                    activeHourlyRate = rateValue
+                    cachedRateProjectId = projectId
+                    return
+                }
+            } catch {
+                print("[DEBUG] loadProjectRate activity rates error: \(error)")
+            }
+        }
+
+        // Rate not found — do NOT cache so it retries on next poll
+        activeHourlyRate = 0
     }
 
     // MARK: - Name Resolution

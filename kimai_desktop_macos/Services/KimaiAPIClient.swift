@@ -176,16 +176,17 @@ actor KimaiAPIClient {
         )
     }
 
-    func fetchTimesheets(page: Int = 1, size: Int = Constants.Defaults.historyPageSize) async throws -> [KimaiTimesheet] {
-        try await request(
-            path: "/api/timesheets",
-            queryItems: [
-                URLQueryItem(name: "page", value: "\(page)"),
-                URLQueryItem(name: "size", value: "\(size)"),
-                URLQueryItem(name: "order", value: "DESC"),
-                URLQueryItem(name: "orderBy", value: "begin"),
-            ]
-        )
+    func fetchTimesheets(page: Int = 1, size: Int = Constants.Defaults.historyPageSize, projectId: Int? = nil) async throws -> [KimaiTimesheet] {
+        var queryItems = [
+            URLQueryItem(name: "page", value: "\(page)"),
+            URLQueryItem(name: "size", value: "\(size)"),
+            URLQueryItem(name: "order", value: "DESC"),
+            URLQueryItem(name: "orderBy", value: "begin"),
+        ]
+        if let projectId {
+            queryItems.append(URLQueryItem(name: "project", value: "\(projectId)"))
+        }
+        return try await request(path: "/api/timesheets", queryItems: queryItems)
     }
 
     func startTimesheet(projectId: Int, activityId: Int, description: String? = nil) async throws -> KimaiTimesheet {
