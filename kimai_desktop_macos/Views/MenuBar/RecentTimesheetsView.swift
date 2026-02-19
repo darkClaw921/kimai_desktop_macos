@@ -20,7 +20,7 @@ struct RecentTimesheetsView: View {
                 ForEach(appState.recentTimesheets.prefix(5)) { timesheet in
                     if !timesheet.isActive {
                         TimesheetRow(timesheet: timesheet) {
-                            Task { await appState.restartTimesheet(timesheet) }
+                            appState.requestRestart(timesheet)
                         }
                         .padding(.horizontal, 4)
 

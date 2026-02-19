@@ -69,7 +69,7 @@ struct TimesheetHistoryView: View {
                     TableColumn("") { timesheet in
                         if !timesheet.isActive {
                             Button {
-                                Task { await appState.restartTimesheet(timesheet) }
+                                appState.requestRestart(timesheet)
                             } label: {
                                 Image(systemName: "play.circle")
                             }

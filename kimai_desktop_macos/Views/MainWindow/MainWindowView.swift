@@ -5,6 +5,8 @@ struct MainWindowView: View {
     @State private var selectedSidebarItem: SidebarItem? = .dashboard
 
     var body: some View {
+        @Bindable var appState = appState
+
         NavigationSplitView {
             SidebarView(selection: $selectedSidebarItem)
         } detail: {
@@ -24,6 +26,14 @@ struct MainWindowView: View {
             }
         }
         .frame(minWidth: 700, minHeight: 500)
+        .sheet(isPresented: Binding(
+            get: { appState.timesheetToRestart != nil },
+            set: { if !$0 { appState.timesheetToRestart = nil } }
+        )) {
+            RestartDescriptionView()
+                .frame(width: 350)
+                .padding()
+        }
         .task {
             guard appState.isConfigured else { return }
             appState.startPolling()

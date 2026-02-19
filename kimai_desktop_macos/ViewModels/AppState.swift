@@ -31,6 +31,10 @@ final class AppState {
     var selectedProject: KimaiProject?
     var selectedActivity: KimaiActivity?
 
+    // Restart dialog state
+    var restartDescription = ""
+    var timesheetToRestart: KimaiTimesheet?
+
     // Polling
     private var pollTimer: Timer?
     private var isRefreshing = false
@@ -296,7 +300,36 @@ final class AppState {
         }
     }
 
-    func restartTimesheet(_ timesheet: KimaiTimesheet) async {
+    func requestRestart(_ timesheet: KimaiTimesheet) {
+        timesheetToRestart = timesheet
+        restartDescription = ""
+    }
+
+    func confirmRestartWithDescription() async {
+        guard let timesheet = timesheetToRestart else { return }
+        timesheetToRestart = nil
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let started = try await apiClient.startTimesheet(
+                projectId: timesheet.projectId,
+                activityId: timesheet.activityId,
+                description: restartDescription.isEmpty ? nil : restartDescription
+            )
+            activeTimesheet = started
+            if let beginDate = started.beginDate {
+                timerService.start(from: beginDate)
+            }
+            await refresh()
+        } catch {
+            connectionError = error.localizedDescription
+        }
+    }
+
+    func confirmRestartSkip() async {
+        guard let timesheet = timesheetToRestart else { return }
+        timesheetToRestart = nil
         isLoading = true
         defer { isLoading = false }
 

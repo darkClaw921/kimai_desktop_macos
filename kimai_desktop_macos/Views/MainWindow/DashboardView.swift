@@ -113,7 +113,7 @@ struct DashboardView: View {
             } else {
                 ForEach(todayEntries) { timesheet in
                     TimesheetRow(timesheet: timesheet) {
-                        Task { await appState.restartTimesheet(timesheet) }
+                        appState.requestRestart(timesheet)
                     }
                     Divider()
                 }

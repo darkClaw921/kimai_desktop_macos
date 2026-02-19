@@ -167,7 +167,7 @@ struct ProjectDetailView: View {
 
             if !timesheet.isActive {
                 Button {
-                    Task { await appState.restartTimesheet(timesheet) }
+                    appState.requestRestart(timesheet)
                 } label: {
                     Image(systemName: "play.circle.fill")
                         .font(.title3)

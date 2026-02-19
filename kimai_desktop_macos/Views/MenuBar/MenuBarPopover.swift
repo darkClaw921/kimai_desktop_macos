@@ -8,29 +8,43 @@ struct MenuBarPopover: View {
             if !appState.isConfigured {
                 notConfiguredView
             } else {
-                #if compiler(>=6.2)
-                if #available(macOS 26.0, *) {
-                    GlassEffectContainer {
+                if appState.timesheetToRestart != nil {
+                    #if compiler(>=6.2)
+                    if #available(macOS 26.0, *) {
+                        GlassEffectContainer {
+                            RestartDescriptionView()
+                        }
+                    } else {
+                        RestartDescriptionView()
+                    }
+                    #else
+                    RestartDescriptionView()
+                    #endif
+                } else {
+                    #if compiler(>=6.2)
+                    if #available(macOS 26.0, *) {
+                        GlassEffectContainer {
+                            if let activeTimesheet = appState.activeTimesheet {
+                                ActiveTimerView(timesheet: activeTimesheet)
+                            } else {
+                                QuickStartView()
+                            }
+                        }
+                    } else {
                         if let activeTimesheet = appState.activeTimesheet {
                             ActiveTimerView(timesheet: activeTimesheet)
                         } else {
                             QuickStartView()
                         }
                     }
-                } else {
+                    #else
                     if let activeTimesheet = appState.activeTimesheet {
                         ActiveTimerView(timesheet: activeTimesheet)
                     } else {
                         QuickStartView()
                     }
+                    #endif
                 }
-                #else
-                if let activeTimesheet = appState.activeTimesheet {
-                    ActiveTimerView(timesheet: activeTimesheet)
-                } else {
-                    QuickStartView()
-                }
-                #endif
 
                 RecentTimesheetsView()
             }
