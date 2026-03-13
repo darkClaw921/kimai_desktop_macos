@@ -37,8 +37,20 @@ struct kimai_desktop_macosApp: App {
                 Text(menuBarTimerText)
                     .font(.system(.caption, design: .monospaced))
                     .monospacedDigit()
+                    .frame(width: menuBarTextWidth, alignment: .leading)
             }
         }
+    }
+
+    /// Fixed width for menu bar text, rounded up to prevent constant resizing.
+    /// Grows in steps when the text gets longer, never shrinks during a tracking session.
+    private var menuBarTextWidth: CGFloat {
+        let text = menuBarTimerText
+        // Approximate width per monospaced caption character (~7pt)
+        let charWidth: CGFloat = 7.0
+        let baseWidth = CGFloat(text.count) * charWidth
+        // Round up to nearest 20pt step to avoid frequent resizing
+        return ceil(baseWidth / 20.0) * 20.0
     }
 
     private var menuBarTimerText: String {
