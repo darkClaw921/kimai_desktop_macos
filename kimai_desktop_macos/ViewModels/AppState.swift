@@ -5,6 +5,9 @@ import Observation
 final class AppState {
     let apiClient = KimaiAPIClient()
     let timerService = TimerService()
+    let eventStore = EventStore()
+
+    private(set) var webhookServer: WebhookServer?
 
     // Connection
     var isConnected = false
@@ -347,5 +350,75 @@ final class AppState {
 
     func testConnection() async throws -> Bool {
         try await apiClient.testConnection()
+    }
+
+    // MARK: - Webhook Server
+
+    func startWebhookServer() async {
+        guard webhookServer == nil else { return }
+
+        let port = UInt16(UserDefaults.standard.integer(forKey: Constants.Webhook.portUserDefaultsKey))
+        let resolvedPort = port > 0 ? port : Constants.Webhook.defaultPort
+        let token = KeychainService.load(key: Constants.Webhook.tokenKeychainKey)
+
+        let eventStore = self.eventStore
+        let server = WebhookServer { event in
+            Task { @MainActor in
+                eventStore.add(event)
+            }
+        }
+
+        do {
+            try await server.start(port: resolvedPort, token: token)
+            webhookServer = server
+        } catch {
+            print("[DEBUG] Failed to start webhook server: \(error)")
+        }
+    }
+
+    func stopWebhookServer() async {
+        guard let server = webhookServer else { return }
+        await server.stop()
+        webhookServer = nil
+    }
+
+    // MARK: - Event Processing
+
+    func processEvents(
+        eventIds: [UUID],
+        project: KimaiProject,
+        activity: KimaiActivity,
+        useEstimatedDuration: Bool
+    ) async throws -> Int {
+        var successCount = 0
+
+        for eventId in eventIds {
+            guard let event = eventStore.events.first(where: { $0.id == eventId }) else {
+                continue
+            }
+
+            let duration = useEstimatedDuration ? event.estimatedHumanDuration : event.realDuration
+            let end = event.timestamp
+            let begin = end.addingTimeInterval(-TimeInterval(duration))
+
+            do {
+                let moscowTZ = TimeZone(identifier: "Europe/Moscow")
+                _ = try await apiClient.createCompletedTimesheet(
+                    projectId: project.id,
+                    activityId: activity.id,
+                    begin: begin,
+                    end: end,
+                    description: event.description,
+                    timeZone: moscowTZ
+                )
+                eventStore.markProcessed([event.id])
+                successCount += 1
+            } catch {
+                // Continue with remaining events on failure
+                print("[DEBUG] Failed to process event \(eventId): \(error)")
+            }
+        }
+
+        return successCount
     }
 }

@@ -11,4 +11,14 @@ nonisolated enum Constants {
         static let historyPageSize = 50
         static let currencySuffix = "₽"
     }
+
+    enum Webhook {
+        static let defaultPort: UInt16 = 29876
+        static let portUserDefaultsKey = "webhookPort"
+        static let tokenKeychainKey = "webhook-auth-token"
+    }
+
+    enum EventStorage {
+        static let fileName = "agent_events.json"
+    }
 }

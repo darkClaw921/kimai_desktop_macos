@@ -198,6 +198,25 @@ actor KimaiAPIClient {
         return try await request(method: "POST", path: "/api/timesheets", body: body)
     }
 
+    func createCompletedTimesheet(
+        projectId: Int,
+        activityId: Int,
+        begin: Date,
+        end: Date,
+        description: String? = nil,
+        timeZone: TimeZone? = nil
+    ) async throws -> KimaiTimesheet {
+        let body = CreateCompletedTimesheetRequest(
+            project: projectId,
+            activity: activityId,
+            begin: begin,
+            end: end,
+            description: description,
+            timeZone: timeZone
+        )
+        return try await request(method: "POST", path: "/api/timesheets", body: body)
+    }
+
     func stopTimesheet(id: Int) async throws -> KimaiTimesheet {
         try await request(method: "PATCH", path: "/api/timesheets/\(id)/stop")
     }

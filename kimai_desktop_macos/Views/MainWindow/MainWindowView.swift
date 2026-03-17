@@ -17,6 +17,8 @@ struct MainWindowView: View {
                 TimesheetHistoryView()
             case .projects:
                 ProjectDetailView()
+            case .events:
+                EventsInboxView()
             case nil:
                 ContentUnavailableView(
                     "Выберите раздел",
@@ -37,6 +39,7 @@ struct MainWindowView: View {
         .task {
             guard appState.isConfigured else { return }
             appState.startPolling()
+            await appState.startWebhookServer()
             await appState.loadProjects()
         }
     }

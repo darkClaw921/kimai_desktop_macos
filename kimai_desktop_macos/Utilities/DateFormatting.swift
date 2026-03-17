@@ -31,8 +31,15 @@ nonisolated enum DateFormatting {
         return kimaiNoTZFormatter.date(from: string)
     }
 
-    static func formatForAPI(_ date: Date) -> String {
-        kimaiFormatter.string(from: date)
+    static func formatForAPI(_ date: Date, timeZone: TimeZone? = nil) -> String {
+        if let timeZone {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = timeZone
+            return formatter.string(from: date)
+        }
+        return kimaiFormatter.string(from: date)
     }
 
     static func formatElapsed(_ interval: TimeInterval) -> String {

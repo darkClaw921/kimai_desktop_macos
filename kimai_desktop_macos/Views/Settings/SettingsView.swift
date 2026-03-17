@@ -12,7 +12,12 @@ struct SettingsView: View {
                 .tabItem {
                     Label("Основные", systemImage: "gearshape")
                 }
+
+            AgentSettingsView()
+                .tabItem {
+                    Label("Агент", systemImage: "terminal")
+                }
         }
-        .frame(width: 450, height: 300)
+        .frame(width: 450, height: 500)
     }
 }

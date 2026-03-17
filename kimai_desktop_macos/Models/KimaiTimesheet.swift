@@ -122,3 +122,19 @@ nonisolated struct CreateTimesheetRequest: Encodable, Sendable {
         self.description = description
     }
 }
+
+nonisolated struct CreateCompletedTimesheetRequest: Encodable, Sendable {
+    let begin: String
+    let end: String
+    let project: Int
+    let activity: Int
+    let description: String?
+
+    init(project: Int, activity: Int, begin: Date, end: Date, description: String? = nil, timeZone: TimeZone? = nil) {
+        self.begin = DateFormatting.formatForAPI(begin, timeZone: timeZone)
+        self.end = DateFormatting.formatForAPI(end, timeZone: timeZone)
+        self.project = project
+        self.activity = activity
+        self.description = description
+    }
+}
